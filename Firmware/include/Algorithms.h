@@ -11,8 +11,19 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-uint8_t pid_update(uint8_t sample_pin, char *thingo);
+struct pid_controller {
+    uint8_t sample_pin;
+    uint8_t write_pin;
+    uint8_t id;
+};
 
-uint8_t check_protection();
+struct protection {
+    uint8_t sample_pin;
+    uint8_t max;
+};
+
+void pid_update(struct pid_controller *pid);
+
+bool check_protection(struct protection *prot);
 
 #endif
