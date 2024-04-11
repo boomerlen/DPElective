@@ -9,7 +9,6 @@
 #define ALGORITHMS_H
 
 #include <stdint.h>
-#include <stdbool.h>
 
 struct pid_controller {
     uint8_t sample_pin;
@@ -22,8 +21,9 @@ struct protection {
     uint8_t max;
 };
 
-void pid_update(struct pid_controller *pid);
+// Dodgy casts - pass to interrupt handlers
+void pid_update(void *pid);
 
-bool check_protection(struct protection *prot);
+void check_protection(void *prot);
 
 #endif

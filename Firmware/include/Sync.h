@@ -15,12 +15,13 @@ struct interrupt_handlers {
     // Called at every interrupt
     uint8_t n_simultaneous_handlers;
     void (**sim_handlers)(void *);
+    void **sim_handler_args;
 
     // Sequential handlers
     // One called per interrupt, in turn
     uint8_t n_sequential_handlers;
     void (**seq_handlers)(void *);
-
+    void **seq_handler_args;
 };
 
 void setup_interrupts(struct interrupt_handlers *handlers);
