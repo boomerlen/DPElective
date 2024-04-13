@@ -1,18 +1,85 @@
 #include <Arduino.h>
 
+#include <stdint.h>
+#include <stdbool.h>
+
 #include "Algorithms.h"
-#include "Sync.h"
+#include "ADC.h"
 
 // Globals
-struct interrupt_handlers handler;
+
+// We know at compile time what this looks like so we can just
+// hard code these structures as global variables without requiring dynamic memory allocation
+// They must be global otherwise they will become unavailable in any function calls
+
+
+
+// Instantiate PID controller structures
+static struct pid_controller controller_5v;
+static struct pid_controller controller_10v;
+
+// MPPT structures
+static struct mppt_controller controller_mppt;
+static struct mppt_wrapper controller_mppt_wrapper = {
+  .current_set = false,
+  .current = 0,
+  .controller = &controller_mppt
+};
+
+// The sequential handlers
+void (*handlers[3])(uint8_t, void *) = {
+  pid_update,
+  pid_update,
+  mppt_wrapper,
+  //mppt_wrapper
+};
+
+void *handler_args[3] = {
+  (void *)&controller_5v,
+  (void *)&controller_10v,
+  (void *)&controller_mppt_wrapper,
+};
+
+uint8_t handler_ports[3] = {
+  PORT0, // Dummy - not sure what these should be just yet
+  PORT1,
+  PORT2,
+};
+
+static struct handlers global_handler = {
+  .n_handlers = 3,
+  .handler_in_ports = handler_ports,
+  .handlers = handlers,
+  .handler_args = handler_args,
+};
+
+// Only other required global
+void mode_enable_mppt() {
+  global_handler.n_handlers = 3;
+  handlers[1] = mppt_wrapper;
+  handler_args[1] = (void *)&controller_mppt_wrapper;
+  handler_ports[1] = PORT2;
+}
+
+void mode_disable_mppt() {
+  // Always leave one mppt controller in memory but do not index to it
+  global_handler.n_handlers = 2;
+  handlers[1] = pid_update;
+  handler_args[1] = (void *)&controller_10v;
+  handler_ports[1] = PORT1;
+}
 
 void setup() {
-  handler.n_sequential_handlers = 0;
-  handler.n_simultaneous_handlers = 0;
+  // Set up global structs here
+  pid_setup(&controller_5v);
+  pid_setup(&controller_10v);
+  mppt_setup(&controller_mppt);
 
-  setup_interrupts(&handler); 
+  adc_setup(&global_handler);
+  
+  // Program starts here
+  adc_begin();
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
 }
