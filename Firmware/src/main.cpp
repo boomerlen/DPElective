@@ -1,7 +1,10 @@
 #include <Arduino.h>
 
+#include <stdint.h>
+#include <stdbool.h>
+
 #include "Algorithms.h"
-#include "Sync.h"
+#include "ADC.h"
 
 // Globals
 
@@ -9,56 +12,74 @@
 // hard code these structures as global variables without requiring dynamic memory allocation
 // They must be global otherwise they will become unavailable in any function calls
 
+
+
 // Instantiate PID controller structures
 static struct pid_controller controller_5v;
 static struct pid_controller controller_10v;
 
-// Instantiate protections
-static struct protection protection_out_voltage;
-static struct protection protection_in_current;
+// MPPT structures
+static struct mppt_controller controller_mppt;
+static struct mppt_wrapper controller_mppt_wrapper = {
+  .current_set = false,
+  .current = 0,
+  .controller = &controller_mppt
+};
 
 // The sequential handlers
-void (*seq_handlers[2])(void *) = {
+void (*handlers[3])(uint8_t, void *) = {
   pid_update,
-  pid_update
+  pid_update,
+  mppt_wrapper,
+  //mppt_wrapper
 };
 
-void *seq_handler_args[2] = {
+void *handler_args[3] = {
   (void *)&controller_5v,
-  (void *)&controller_10v
+  (void *)&controller_10v,
+  (void *)&controller_mppt_wrapper,
 };
 
-void (*sim_handlers[2])(void *) = {
-  check_protection,
-  check_protection
+uint8_t handler_ports[3] = {
+  PORT0, // Dummy - not sure what these should be just yet
+  PORT1,
+  PORT2,
 };
 
-void *sim_handler_args[2] = {
-  (void *)&protection_out_voltage,
-  (void *)&protection_in_current
-};
-
-static struct interrupt_handlers global_handler = {
-  .n_simultaneous_handlers = 2,
-  .sim_handlers = sim_handlers,
-  .sim_handler_args = sim_handler_args,
-  .n_sequential_handlers = 2,
-  .seq_handlers = seq_handlers,
-  .seq_handler_args = seq_handler_args,
+static struct handlers global_handler = {
+  .n_handlers = 3,
+  .handler_in_ports = handler_ports,
+  .handlers = handlers,
+  .handler_args = handler_args,
 };
 
 // Only other required global
-void mode_switch() {
-  // Idea would be to replace the second function pointer in seq_handlers
-  // and seq_handler_args
+void mode_enable_mppt() {
+  global_handler.n_handlers = 3;
+  handlers[1] = mppt_wrapper;
+  handler_args[1] = (void *)&controller_mppt_wrapper;
+  handler_ports[1] = PORT2;
+}
+
+void mode_disable_mppt() {
+  // Always leave one mppt controller in memory but do not index to it
+  global_handler.n_handlers = 2;
+  handlers[1] = pid_update;
+  handler_args[1] = (void *)&controller_10v;
+  handler_ports[1] = PORT1;
 }
 
 void setup() {
   // Set up global structs here
+  pid_setup(&controller_5v);
+  pid_setup(&controller_10v);
+  mppt_setup(&controller_mppt);
 
-  setup_interrupts(&global_handler); 
+  adc_setup(&global_handler);
+  
+  // Program starts here
+  adc_begin();
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
 }

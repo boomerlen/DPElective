@@ -6,12 +6,10 @@
 
 #include "Algorithms.h"
 
-void pid_update(void *pid) {
+void pid_update(uint8_t sample, void *pid) {
     // Do nothing
-    (struct pid_controller *)pid;
+    // But also should check protection at relevant nodes
 }
+void pid_setup(struct pid_controller *pid) {
 
-void check_protection(void *proc) {
-    // Do nothing
-    (struct protection *)proc;
 }
