@@ -10,14 +10,31 @@
 
 #include <stdint.h>
 
+// Experimentally calibrated (or educatedly guessed) integrator anti-windup
+#define LIM_PID_INTEGRATOR_MIN 0.0
+#define LIM_PID_INTEGRATOR_MAX 1.0
+#define LIM_PID_OUT_MIN 0.1
+#define LIM_PID_OUT_MAX 4.5
+
+// Max voltage at any point in converter
+#define LIM_OVERVOLTAGE 25.0
+
 // Hugo fill in one day probably
 struct pid_controller {
     uint8_t write_pin;
-    uint8_t id;
+    
     float reference;
+
     float Kp;
     float Ki;
     float Kd;
+
+    float last_error;
+    float last_integral;
+    float last_derivative;
+
+    // Time constant of differentiator LPF
+    float filter_tau;
 };
 
 // Riley fill in
