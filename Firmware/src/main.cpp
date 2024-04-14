@@ -5,6 +5,15 @@
 
 #include "Algorithms.h"
 #include "ADC.h"
+#include "Error.h"
+
+// Constant system parameters
+#define PIN_ERROR PORT0
+#define PIN_PID_5V PORT0
+#define PIN_PID_10V PORT0
+#define PIN_MPPT_CURRENT PORT0
+#define PIN_MPPT_VOLTAGE PORT0
+#define PIN_MPPT_OUT PIN_PID_10V
 
 // Globals
 
@@ -73,6 +82,8 @@ void mode_disable_mppt() {
 
 void setup() {
   // Set up global structs here
+  init_error(PIN_ERROR);
+
   pid_setup(&controller_5v);
   pid_setup(&controller_10v);
   mppt_setup(&controller_mppt);
@@ -84,4 +95,10 @@ void setup() {
 }
 
 void loop() {
+  if (check_fault()) {
+    // Kill all execution
+    // Disable all PWM output
+    // Turn off machine 
+    // Cry
+  }
 }

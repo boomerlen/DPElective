@@ -9,6 +9,11 @@
 
 #include <stdint.h>
 
+// Macro to convert ADC output to float in standard (5V reference) case
+#define ADC_CONVERT(x) x * 5 / 256
+
+#define ADC_PERIOD 39.0e-6
+
 // Structure for directing ADC results
 struct handlers {
     uint8_t n_handlers;
