@@ -44,4 +44,8 @@ void mppt_setup(struct mppt_controller *mppt);
 // To not break the handler calling system 
 void mppt_wrapper(uint8_t sample, void *mppt_wrapper);
 
+// NOP to avoid speeding up controllers when not in MPPT mode
+
+void dummy_update(uint8_t sample, void *null_ptr);
+
 #endif

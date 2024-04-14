@@ -12,8 +12,6 @@
 // hard code these structures as global variables without requiring dynamic memory allocation
 // They must be global otherwise they will become unavailable in any function calls
 
-
-
 // Instantiate PID controller structures
 static struct pid_controller controller_5v;
 static struct pid_controller controller_10v;
@@ -30,7 +28,8 @@ static struct mppt_wrapper controller_mppt_wrapper = {
 void (*handlers[3])(uint8_t, void *) = {
   pid_update,
   pid_update,
-  mppt_wrapper,
+  dummy_update,
+  //mppt_wrapper,
   //mppt_wrapper
 };
 
@@ -59,14 +58,17 @@ void mode_enable_mppt() {
   handlers[1] = mppt_wrapper;
   handler_args[1] = (void *)&controller_mppt_wrapper;
   handler_ports[1] = PORT2;
+
+  handlers[2] = mppt_wrapper;
 }
 
 void mode_disable_mppt() {
-  // Always leave one mppt controller in memory but do not index to it
   global_handler.n_handlers = 2;
   handlers[1] = pid_update;
   handler_args[1] = (void *)&controller_10v;
   handler_ports[1] = PORT1;
+
+  handlers[2] = dummy_update;
 }
 
 void setup() {

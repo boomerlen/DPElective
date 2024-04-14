@@ -13,3 +13,8 @@ void pid_update(uint8_t sample, void *pid) {
 void pid_setup(struct pid_controller *pid) {
 
 }
+
+// Put this here because why not
+void dummy_update(uint8_t sample, void *null_ptr) {
+
+}
