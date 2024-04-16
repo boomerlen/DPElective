@@ -70,7 +70,7 @@ void pid_update(uint8_t sample, void *pid) {
 #endif // PRODUCTION
 
 void pid_setup(struct pid_controller *pid, uint8_t pin_out, float reference) {
-    pid->filter_tau = 1;
+    pid->filter_tau = 0.2;
     pid->Kd = 0;
     pid->Kp = 0;
     pid->Ki = 0;
@@ -87,7 +87,7 @@ void pid_setup(struct pid_controller *pid, uint8_t pin_out, float reference) {
 void pid_update(uint8_t sample, void *pid) {
     struct pid_controller *p = (struct pid_controller *)pid;
 
-    analogWrite(p->write_pin, sample);
+    pwm_write(p->write_pin, sample);
 }
 
 #endif

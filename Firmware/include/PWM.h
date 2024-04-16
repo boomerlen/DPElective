@@ -13,6 +13,8 @@
 
 #include <stdint.h>
 
+void pwm_set_speed();
+
 void pwm_write(uint8_t pin, uint8_t pwm);
 
 #endif

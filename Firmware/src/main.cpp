@@ -6,6 +6,7 @@
 #include "Algorithms.h"
 #include "ADC.h"
 #include "Error.h"
+#include "PWM.h"
 
 // Specify execution mode here
 #include "Mode.h"
@@ -17,25 +18,6 @@
 
 
 // Constant system parameters
-#define PIN_ERROR 22 // PA0
-#define PIN_PID_OUT_5V 12 // PB6
-#define PIN_PID_OUT_10V 13 // PB7
-
-#define PIN_PID_FB_5V 54 // PF0 (A0)
-#define PIN_PID_FB_10V 55 // PF1 (A1)
-#define PIN_MPPT_CURRENT 56 // PF2
-#define PIN_MPPT_VOLTAGE 57 // PF3
-
-// Analog inputs need MUX flags not pins
-// Which are not the same
-// Pretty similar actually but yeah 
-#define MUX_FB_5V 0
-#define MUX_FB_10V 1
-#define MUX_MPPT_CURRENT 2
-#define MUX_MPPT_VOLTAGE 3
-
-#define PIN_MPPT_OUT 13 // PB7
-#define PIN_ADC_INTTERUPT_FLAG 23 // PA1
 
 // Globals
 
@@ -114,6 +96,7 @@ void setup() {
   pid_setup(&controller_10v, PIN_PID_OUT_10V, 5.0);
   mppt_setup(&controller_mppt);
 
+  pwm_set_speed();
   adc_setup(&global_handler, PIN_ADC_INTTERUPT_FLAG);
   
   // Program starts here

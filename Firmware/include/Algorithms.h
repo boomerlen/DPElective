@@ -9,15 +9,8 @@
 #define ALGORITHMS_H
 
 #include <stdint.h>
+#include "Mode.h"
 
-// Experimentally calibrated (or educatedly guessed) integrator anti-windup
-#define LIM_PID_INTEGRATOR_MIN 0.0
-#define LIM_PID_INTEGRATOR_MAX 1.0
-#define LIM_PID_OUT_MIN 0.1
-#define LIM_PID_OUT_MAX 4.5
-
-// Max voltage at any point in converter
-#define LIM_OVERVOLTAGE 25.0
 
 // Hugo fill in one day probably
 struct pid_controller {
