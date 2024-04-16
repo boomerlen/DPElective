@@ -52,7 +52,7 @@ struct mppt_wrapper {
 
 // Dodgy casts - pass to interrupt handlers
 void pid_update(uint8_t sample, void *pid);
-void pid_setup(struct pid_controller *pid);
+void pid_setup(struct pid_controller *pid, uint8_t pin_out, float reference);
 
 // For Riley to fill in
 void mppt_update(uint8_t sample_current, uint8_t sample_voltage, struct mppt_controller *mppt);

@@ -4,11 +4,16 @@
 //
 // Created 10/4/24
 
+#include <Arduino.h>
+#include <stdint.h>
+
 #include "Algorithms.h"
 #include "ADC.h"
 #include "PWM.h"
 #include "Error.h"
+#include "Mode.h"
 
+#ifdef PRODUCTION
 void pid_update(uint8_t sample, void *pid) {
     // Dodgy ignore lol
     struct pid_controller *p = (struct pid_controller *)pid;
@@ -62,9 +67,30 @@ void pid_update(uint8_t sample, void *pid) {
     pwm_write(p->write_pin, DAC_CONVERT(result));
 }
 
-void pid_setup(struct pid_controller *pid) {
+#endif // PRODUCTION
 
+void pid_setup(struct pid_controller *pid, uint8_t pin_out, float reference) {
+    pid->filter_tau = 1;
+    pid->Kd = 0;
+    pid->Kp = 0;
+    pid->Ki = 0;
+    pid->last_derivative = 0;
+    pid->last_error = 0;
+    pid->last_integral = 0;
+    pid->reference = reference;
+    pid->write_pin = pin_out;
 }
+
+
+#ifdef DEBUG_PWM
+
+void pid_update(uint8_t sample, void *pid) {
+    struct pid_controller *p = (struct pid_controller *)pid;
+
+    analogWrite(p->write_pin, sample);
+}
+
+#endif
 
 // Put this here because why not
 void dummy_update(uint8_t sample, void *null_ptr) {
