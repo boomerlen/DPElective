@@ -6,14 +6,18 @@
 #include "Algorithms.h"
 #include "ADC.h"
 #include "Error.h"
+#include "PWM.h"
+
+// Specify execution mode here
+#include "Mode.h"
+
+// Pin definitions
+
+// Analog input ports should be Port F
+// Have available PF0-PF3 (should be enough - 4 input channels)
+
 
 // Constant system parameters
-#define PIN_ERROR PORT0
-#define PIN_PID_5V PORT0
-#define PIN_PID_10V PORT0
-#define PIN_MPPT_CURRENT PORT0
-#define PIN_MPPT_VOLTAGE PORT0
-#define PIN_MPPT_OUT PIN_PID_10V
 
 // Globals
 
@@ -35,9 +39,9 @@ static struct mppt_wrapper controller_mppt_wrapper = {
 
 // The sequential handlers
 void (*handlers[3])(uint8_t, void *) = {
-  pid_update,
-  pid_update,
-  dummy_update,
+  pid_update, // 5V
+  pid_update, // 10V
+  dummy_update, // Pad
   //mppt_wrapper,
   //mppt_wrapper
 };
@@ -48,10 +52,11 @@ void *handler_args[3] = {
   (void *)&controller_mppt_wrapper,
 };
 
+// ADC ports
 uint8_t handler_ports[3] = {
-  PORT0, // Dummy - not sure what these should be just yet
-  PORT1,
-  PORT2,
+  MUX_FB_5V, // Dummy - not sure what these should be just yet
+  MUX_FB_10V,
+  MUX_MPPT_VOLTAGE,
 };
 
 static struct handlers global_handler = {
@@ -66,7 +71,7 @@ void mode_enable_mppt() {
   global_handler.n_handlers = 3;
   handlers[1] = mppt_wrapper;
   handler_args[1] = (void *)&controller_mppt_wrapper;
-  handler_ports[1] = PORT2;
+  handler_ports[1] = MUX_MPPT_CURRENT;
 
   handlers[2] = mppt_wrapper;
 }
@@ -75,20 +80,24 @@ void mode_disable_mppt() {
   global_handler.n_handlers = 2;
   handlers[1] = pid_update;
   handler_args[1] = (void *)&controller_10v;
-  handler_ports[1] = PORT1;
+  handler_ports[1] = MUX_FB_10V;
 
   handlers[2] = dummy_update;
 }
 
+
+
+#if defined PRODUCTION || defined DEBUG_PWM
 void setup() {
   // Set up global structs here
   init_error(PIN_ERROR);
 
-  pid_setup(&controller_5v);
-  pid_setup(&controller_10v);
+  pid_setup(&controller_5v, PIN_PID_OUT_5V, 5.0);
+  pid_setup(&controller_10v, PIN_PID_OUT_10V, 5.0);
   mppt_setup(&controller_mppt);
 
-  adc_setup(&global_handler);
+  pwm_set_speed();
+  adc_setup(&global_handler, PIN_ADC_INTTERUPT_FLAG);
   
   // Program starts here
   adc_begin();
@@ -102,3 +111,58 @@ void loop() {
     // Cry
   }
 }
+
+#endif 
+
+#ifdef DEBUG_ADC
+
+void setup() {
+  init_error(PIN_ERROR);
+  adc_setup(&global_handler, PIN_ADC_INTTERUPT_FLAG);
+
+  Serial.begin(115200);
+
+  adc_begin();
+
+}
+
+void loop() {
+  // Wow
+  digitalWrite(PIN_ERROR, HIGH);
+  delay(1000);
+
+  digitalWrite(PIN_ERROR, LOW);
+  delay(1000);
+}
+
+#endif
+
+#ifdef DEBUG_ADC_SAMPLE_RATE
+
+void setup() {
+  init_error(PIN_ERROR);
+
+  // Do not actually sample - use dummy handlers
+  global_handler.handlers[0] = dummy_update;
+  global_handler.handlers[1] = dummy_update;
+  global_handler.handlers[2] = dummy_update;
+
+  adc_setup(&global_handler, PIN_ADC_INTTERUPT_FLAG);
+
+  adc_begin();
+
+  //Serial.begin(115200);
+}
+
+void loop() {
+  // Ensure something is happening here to simulate a load to deal with at the same time
+  digitalWrite(PIN_ERROR, HIGH);
+  delay(1000);
+
+  // Serial.write(ADCSRA);
+
+  digitalWrite(PIN_ERROR, LOW);
+  delay(1000);
+}
+
+#endif

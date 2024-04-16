@@ -22,7 +22,7 @@ struct handlers {
     void **handler_args;
 };
 
-void adc_setup(struct handlers *h);
+void adc_setup(struct handlers *h, uint8_t interrupt_triggered_flag);
 
 void adc_begin();
 

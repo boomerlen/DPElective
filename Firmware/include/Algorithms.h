@@ -9,15 +9,8 @@
 #define ALGORITHMS_H
 
 #include <stdint.h>
+#include "Mode.h"
 
-// Experimentally calibrated (or educatedly guessed) integrator anti-windup
-#define LIM_PID_INTEGRATOR_MIN 0.0
-#define LIM_PID_INTEGRATOR_MAX 1.0
-#define LIM_PID_OUT_MIN 0.1
-#define LIM_PID_OUT_MAX 4.5
-
-// Max voltage at any point in converter
-#define LIM_OVERVOLTAGE 25.0
 
 // Hugo fill in one day probably
 struct pid_controller {
@@ -52,7 +45,7 @@ struct mppt_wrapper {
 
 // Dodgy casts - pass to interrupt handlers
 void pid_update(uint8_t sample, void *pid);
-void pid_setup(struct pid_controller *pid);
+void pid_setup(struct pid_controller *pid, uint8_t pin_out, float reference);
 
 // For Riley to fill in
 void mppt_update(uint8_t sample_current, uint8_t sample_voltage, struct mppt_controller *mppt);
