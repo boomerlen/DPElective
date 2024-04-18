@@ -85,15 +85,15 @@ void mode_disable_mppt() {
   handlers[2] = dummy_update;
 }
 
-
+// Implement little switchy thing
 
 #if defined PRODUCTION || defined DEBUG_PWM
 void setup() {
   // Set up global structs here
   init_error(PIN_ERROR);
 
-  pid_setup(&controller_5v, PIN_PID_OUT_5V, 5.0);
-  pid_setup(&controller_10v, PIN_PID_OUT_10V, 5.0);
+  pid_setup(&controller_5v, PIN_PID_OUT_5V, 2.5);
+  pid_setup(&controller_10v, PIN_PID_OUT_10V, 2.5);
   mppt_setup(&controller_mppt);
 
   pwm_set_speed();
