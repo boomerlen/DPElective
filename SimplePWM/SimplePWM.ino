@@ -7,16 +7,19 @@ void setup() {
   up_to = 0;
 
   Serial.begin(115200);
+
+  analogWrite(12, 150);
 }
 
 
 void loop() {
   // put your main code here, to run repeatedly:
-  while (Serial.avilable != 0) {
+  while (Serial.available() != 0) {
     char incoming = Serial.read();
     if (incoming == '\n') {
       buf[up_to] = '\0';
       int val = atoi(buf);
+      up_to = 0;
       analogWrite(12, val);
     } else {
       buf[up_to] = incoming;

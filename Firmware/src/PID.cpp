@@ -22,16 +22,16 @@ void pid_update(uint8_t sample, void *pid) {
     float meas = ADC_CONVERT(sample);
 
     // 1: protection
-    if (meas > LIM_OVERVOLTAGE) {
+    // Use the byte sample so floating point errors can't mess with this
+    /*if (sample == 255) {
         // Guarantee that this pin is disabled then signal fault so hopefully main can kill everything
         pwm_write(p->write_pin, 0);
         signal_fault();
         return;
-    }
-
+    }*/
 
     // Error
-    float error = p->reference - sample;
+    float error = p->reference - meas;
 
     // Product
     float product = p->Kp * error;
@@ -47,22 +47,31 @@ void pid_update(uint8_t sample, void *pid) {
     }
 
     // Differentiator
-    float derivative = 2 * p->Kd / (2 * p->filter_tau + ADC_PERIOD) * (error - p->last_error) \
-            + (2 * p->filter_tau - ADC_PERIOD) / (2 * p->filter_tau + ADC_PERIOD) * p->last_derivative;
-
+    // float derivative = 2 * p->Kd / (2 * p->filter_tau + ADC_PERIOD) * (error - p->last_error) \
+    //         + (2 * p->filter_tau - ADC_PERIOD) / (2 * p->filter_tau + ADC_PERIOD) * p->last_derivative;
+    float derivative = 0;
     // Result and clamp
     float result = product + integral + derivative;
 
-    if (result > LIM_PID_OUT_MAX) {
-        result = LIM_PID_OUT_MAX;
-    } else if (result < LIM_PID_OUT_MIN) {
-        result = LIM_PID_OUT_MIN;
-    }
+    // if (result > LIM_PID_OUT_MAX) {
+    //     result = LIM_PID_OUT_MAX;
+    // } else if (result < LIM_PID_OUT_MIN) {
+    //     result = LIM_PID_OUT_MIN;
+    // }
 
     // Update entries
     p->last_derivative = derivative;
     p->last_error = error;
     p->last_integral = integral;
+
+    // Serial.println("Measaurement: ");
+    // Serial.println(meas);
+    // Serial.println("Error:");
+    // Serial.println(error);
+    // Serial.println("Output:");
+    // Serial.println(result);
+    // Serial.println("PWM:");
+    // Serial.println(DAC_CONVERT(result));
 
     pwm_write(p->write_pin, DAC_CONVERT(result));
 }
@@ -79,6 +88,7 @@ void pid_setup(struct pid_controller *pid, uint8_t pin_out, float reference) {
     pid->last_integral = 0;
     pid->reference = reference;
     pid->write_pin = pin_out;
+    pid->invert_pwm = false;
 }
 
 

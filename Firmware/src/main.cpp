@@ -54,7 +54,7 @@ void *handler_args[3] = {
 
 // ADC ports
 uint8_t handler_ports[3] = {
-  MUX_FB_5V, // Dummy - not sure what these should be just yet
+  MUX_FB_5V, 
   MUX_FB_10V,
   MUX_MPPT_VOLTAGE,
 };
@@ -92,8 +92,25 @@ void setup() {
   // Set up global structs here
   init_error(PIN_ERROR);
 
-  pid_setup(&controller_5v, PIN_PID_OUT_5V, 2.5);
-  pid_setup(&controller_10v, PIN_PID_OUT_10V, 2.5);
+  Serial.begin(115200);
+
+// These are backwards
+  pid_setup(&controller_10v, PIN_PID_OUT_5V, 2.2);
+  pid_setup(&controller_5v, PIN_PID_OUT_10V, 2.4);
+
+  // 5V setup
+  controller_5v.Kd = PID_5_KD;
+  controller_5v.Kp = PID_5_KP;
+  controller_5v.Ki = PID_5_KI;
+
+  // 5V uses a gate driver
+  controller_5v.invert_pwm = true;
+
+  // 10V setup
+  controller_10v.Kd = PID_10_KD;
+  controller_10v.Kp = PID_10_KP;
+  controller_10v.Ki = PID_10_KI;
+
   mppt_setup(&controller_mppt);
 
   pwm_set_speed();
@@ -109,6 +126,7 @@ void loop() {
     // Disable all PWM output
     // Turn off machine 
     // Cry
+    // Set everything to 1
   }
 }
 

@@ -9,12 +9,13 @@
 #ifndef PWM_H
 #define PWM_H
 
-#define DAC_CONVERT(x) int(x * 256.0 / 5.0)
+#define DAC_CONVERT(x) (uint8_t)(x * 256.0 / 5.0)
 
 #include <stdint.h>
+#include <stdbool.h>
 
 void pwm_set_speed();
 
-void pwm_write(uint8_t pin, uint8_t pwm);
+void pwm_write(uint8_t pin, uint8_t pwm, bool inverting = false);
 
 #endif
