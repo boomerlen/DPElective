@@ -10,7 +10,7 @@
 #include <stdint.h>
 
 // Macro to convert ADC output to float in standard (5V reference) case
-#define ADC_CONVERT(x) x * 5 / 256
+#define ADC_CONVERT(x) ((float)x * 5.0) / 255.0
 
 #define ADC_PERIOD 39.0e-6
 

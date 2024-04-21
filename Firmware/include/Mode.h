@@ -1,18 +1,18 @@
 #ifndef MODE_H
 #define MODE_H
 
-// #define PRODUCTION
+#define PRODUCTION
 // #define DEBUG_ADC
 // #define DEBUG_ADC_SAMPLE_RATE
-#define DEBUG_PWM
+// #define DEBUG_PWM
 
 // Controller gains!!
-#define PID_5_KP 0
-#define PID_5_KI 0
+#define PID_5_KP 0.1
+#define PID_5_KI 1
 #define PID_5_KD 0
 
-#define PID_10_KP 0
-#define PID_10_KI 0
+#define PID_10_KP 0.1
+#define PID_10_KI 1
 #define PID_10_KD 0
 
 // Experimentally calibrated (or educatedly guessed) integrator anti-windup
@@ -25,7 +25,10 @@
 #define LIM_PID_OUT_MAX 0.9
 
 // Max voltage at any point in converter
-#define LIM_OVERVOLTAGE 25.0
+// Note that this will be different for the different
+// PIDs because they have different voltage dividers
+// Nevermind - just going to use saturation of the ADC as sign of bad
+#define LIM_OVERVOLTAGE 4.9
 
 // And every constant we use too why not
 #define PIN_ERROR 22 // PA0

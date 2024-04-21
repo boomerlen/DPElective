@@ -28,6 +28,9 @@ struct pid_controller {
 
     // Time constant of differentiator LPF
     float filter_tau;
+
+    // Invert PWM output - true if we needed a gate driver
+    bool invert_pwm;
 };
 
 // Riley fill in

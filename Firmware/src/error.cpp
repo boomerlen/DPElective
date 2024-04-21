@@ -15,6 +15,9 @@ static uint8_t fault_pin;
 
 void init_error(uint8_t pin) {
     fault = false;
+    fault_pin = pin;
+    pinMode(fault_pin, OUTPUT);
+    digitalWrite(fault_pin, LOW);
 }
 
 bool check_fault() {

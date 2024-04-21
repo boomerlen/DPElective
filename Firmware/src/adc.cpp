@@ -16,18 +16,17 @@ static uint8_t handler_counter;
 static uint8_t interrupt_flag_pin;
 static bool interrupt_flag_on;
 
-#define MUX_MASK (1 << MUX0 | 1 << MUX1 | 1 << MUX2 | 1 << MUX3 | 1 << MUX4)
+#define MUX_MASK 0x3
 
 ISR(ADC_vect) {
     // Store status register (to avoid breaking concurrent arithmetric if there was any)
     uint8_t curr_sreg = SREG;
-
+    // delay(200000);
     digitalWrite(interrupt_flag_pin, !interrupt_flag_on);
     interrupt_flag_on = !interrupt_flag_on;
 
 #if defined PRODUCTION || defined DEBUG_PWM 
     // Start next acquisition - now have limited time to do remaining operations before next trigger
-    ADCSRA |= 1 << ADSC;
 
     // At this point - can reenable interrupts and check for interrupt collisions
     // Or could just assume this won't happen. With fast enough code it definitely won't happen
@@ -48,6 +47,7 @@ ISR(ADC_vect) {
     // Increment handler "program counter"
     handler_counter = next_handler_index;
 
+    ADCSRA |= 1 << ADSC;
 #endif // PRODUCTION
 #ifdef DEBUG_ADC
     uint8_t next_handler_index = (handler_counter == handlers->n_handlers - 1) ? 0 : handler_counter + 1; 
