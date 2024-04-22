@@ -111,7 +111,7 @@ void setup() {
   controller_10v.Kp = PID_10_KP;
   controller_10v.Ki = PID_10_KI;
 
-  mppt_setup(&controller_mppt);
+  mppt_setup(&controller_mppt, PIN_PID_OUT_10V);
 
   pwm_set_speed();
   adc_setup(&global_handler, PIN_ADC_INTTERUPT_FLAG);
