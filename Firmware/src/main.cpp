@@ -18,6 +18,7 @@
 
 
 // Constant system parameters
+static bool mppt_on;
 
 // Globals
 
@@ -74,6 +75,8 @@ void mode_enable_mppt() {
   handler_ports[1] = MUX_MPPT_CURRENT;
 
   handlers[2] = mppt_wrapper;
+
+  digitalWrite(PIN_MPPT_STATUS, HIGH);
 }
 
 void mode_disable_mppt() {
@@ -83,6 +86,8 @@ void mode_disable_mppt() {
   handler_ports[1] = MUX_FB_10V;
 
   handlers[2] = dummy_update;
+
+  digitalWrite(PIN_MPPT_STATUS, LOW);
 }
 
 // Implement little switchy thing
@@ -90,13 +95,17 @@ void mode_disable_mppt() {
 #if defined PRODUCTION || defined DEBUG_PWM
 void setup() {
   // Set up global structs here
+  pinMode(PIN_MPPT_ON, INPUT);
+  pinMode(PIN_MPPT_STATUS, OUTPUT);
+  mppt_on = false;
+
   init_error(PIN_ERROR);
 
   Serial.begin(115200);
 
 // These are backwards
-  pid_setup(&controller_10v, PIN_PID_OUT_5V, 2.2);
-  pid_setup(&controller_5v, PIN_PID_OUT_10V, 2.4);
+  pid_setup(&controller_10v, PIN_PID_OUT_10V, 2.5);
+  pid_setup(&controller_5v, PIN_PID_OUT_5V, 2.5);
 
   // 5V setup
   controller_5v.Kd = PID_5_KD;
@@ -105,6 +114,10 @@ void setup() {
 
   // 5V uses a gate driver
   controller_5v.invert_pwm = true;
+
+  // 10V also uses a gate driver but only on one MOSFET
+  controller_10v.invert_pwm = false;
+  controller_10v.write_pin_inverted = PIN_PID_OUT_10V_INVERTED;
 
   // 10V setup
   controller_10v.Kd = PID_10_KD;
@@ -127,6 +140,25 @@ void loop() {
     // Turn off machine 
     // Cry
     // Set everything to 1
+    pwm_write(PIN_PID_OUT_10V, 0); // Unsure abt true or false
+    pwm_write(PIN_PID_OUT_5V, 0);
+    while (1) {
+      Serial.println("Fault encountered! Terminated program");
+      delay(10000);
+    }
+  }
+
+  // Probe for changes on switch pin
+  if (digitalRead(PIN_MPPT_ON)) {
+    if (!mppt_on) {
+      mppt_on = true;
+      mode_enable_mppt();
+    }
+  } else {
+    if (mppt_on) {
+      mppt_on = false;
+      mode_disable_mppt();
+    }
   }
 }
 

@@ -13,6 +13,8 @@
 #include "Error.h"
 #include "Mode.h"
 
+static int counter;
+
 #ifdef PRODUCTION
 void pid_update(uint8_t sample, void *pid) {
     // Dodgy ignore lol
@@ -47,33 +49,55 @@ void pid_update(uint8_t sample, void *pid) {
     }
 
     // Differentiator
-    // float derivative = 2 * p->Kd / (2 * p->filter_tau + ADC_PERIOD) * (error - p->last_error) \
-    //         + (2 * p->filter_tau - ADC_PERIOD) / (2 * p->filter_tau + ADC_PERIOD) * p->last_derivative;
-    float derivative = 0;
+    float derivative = 2 * p->Kd / (2 * p->filter_tau + ADC_PERIOD) * (error - p->last_error) \
+            + (2 * p->filter_tau - ADC_PERIOD) / (2 * p->filter_tau + ADC_PERIOD) * p->last_derivative;
+    // float derivative = 0;
     // Result and clamp
     float result = product + integral + derivative;
 
-    // if (result > LIM_PID_OUT_MAX) {
-    //     result = LIM_PID_OUT_MAX;
-    // } else if (result < LIM_PID_OUT_MIN) {
-    //     result = LIM_PID_OUT_MIN;
-    // }
+    if (result > LIM_PID_OUT_MAX) {
+        result = LIM_PID_OUT_MAX;
+    } else if (result < LIM_PID_OUT_MIN) {
+        result = LIM_PID_OUT_MIN;
+    }
 
     // Update entries
     p->last_derivative = derivative;
     p->last_error = error;
     p->last_integral = integral;
+    counter++;
+    if (counter == 8000) {
+        Serial.println("Reference: ");
+        Serial.println(p->reference);
+        Serial.println("Measaurement: ");
+        Serial.println(meas);
+        Serial.println("Error:");
+        Serial.println(error);
+        Serial.println("Output:");
+        Serial.println(result);
+        Serial.println("PWM:");
+        if (p->invert_pwm) {
+            Serial.println(255 - DAC_CONVERT(result));
+        } else {
+            Serial.println(DAC_CONVERT(result));
+        }
+        Serial.println("Product: ");
+        Serial.println(product);
+        Serial.println("Integral: ");
+        Serial.println(integral);
+        Serial.println("Derivative: ");
+        Serial.println(derivative);
+        counter = 1;
+    }
 
-    // Serial.println("Measaurement: ");
-    // Serial.println(meas);
-    // Serial.println("Error:");
-    // Serial.println(error);
-    // Serial.println("Output:");
-    // Serial.println(result);
-    // Serial.println("PWM:");
-    // Serial.println(DAC_CONVERT(result));
+    // If inverted - 
+    // if (p->write_pin_inverted != 0 && p->invert_pwm) {
+    //     pwm_write(p->write_pin_inverted, DAC_CONVERT(result), true);
+    // }
 
-    pwm_write(p->write_pin, DAC_CONVERT(result));
+    // Serial.print(result);
+
+    pwm_write(p->write_pin, DAC_CONVERT(result), p->invert_pwm);
 }
 
 #endif // PRODUCTION
@@ -88,7 +112,10 @@ void pid_setup(struct pid_controller *pid, uint8_t pin_out, float reference) {
     pid->last_integral = 0;
     pid->reference = reference;
     pid->write_pin = pin_out;
+    pid->write_pin_inverted = 0;
     pid->invert_pwm = false;
+
+    counter = 0;
 }
 
 

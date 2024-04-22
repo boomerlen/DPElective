@@ -15,6 +15,7 @@
 // Hugo fill in one day probably
 struct pid_controller {
     uint8_t write_pin;
+    uint8_t write_pin_inverted;
     
     float reference;
 

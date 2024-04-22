@@ -4,9 +4,19 @@
 #include <Arduino.h>
 #include <stdbool.h>
 
+#define MPPT_COUNTER_TOP 1024
+static uint32_t mppt_counter;
+static bool mppt_flag_on;
+
 void mppt_wrapper(uint8_t sample, void *mppt_wrapper) {
-    // Cast as correct datatype
+    // Need to slow MPPT down quite dramatically - do this with just a counter
     struct mppt_wrapper *mppt = (struct mppt_wrapper *)mppt_wrapper;
+
+    if (mppt_counter != MPPT_COUNTER_TOP) {
+        mppt_counter++;
+        return;
+    }
+    // Cast as correct datatype
 
     // Always measurement current then voltage
     if (!mppt->current_set) {
@@ -14,6 +24,8 @@ void mppt_wrapper(uint8_t sample, void *mppt_wrapper) {
         mppt->current_set = true;
         return;
     } 
+
+    mppt_counter++;
 
     // Second measurement is always voltage - we are good to go
     mppt_update(mppt->current, sample, mppt->controller);
@@ -23,6 +35,15 @@ void mppt_wrapper(uint8_t sample, void *mppt_wrapper) {
 }
 
 void mppt_update(uint8_t sample_current, uint8_t sample_voltage, struct mppt_controller *mppt) {
+    // Extra debugging from hugo soz Riley
+    if (mppt_flag_on) {
+        mppt_flag_on = false;
+        digitalWrite(PIN_MPPT_FLAG, LOW);
+    } else {
+        mppt_flag_on = true;
+        digitalWrite(PIN_MPPT_FLAG, HIGH);
+    }
+
     // Updating MPPT struct
     mppt->prev_curr = mppt->curr;
     mppt->prev_volt = mppt->volt;
@@ -84,6 +105,10 @@ void mppt_update(uint8_t sample_current, uint8_t sample_voltage, struct mppt_con
 }
 
 void mppt_setup(struct mppt_controller *mppt, uint8_t pin_out) {
+    // Sorry Riley just some extra garbage here
+    mppt_counter = 0;
+    mppt_flag_on = false;
+
     // Set initial values for current and voltage to 0
     mppt->curr = 0;
     mppt->prev_curr = 0;
