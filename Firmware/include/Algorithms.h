@@ -50,7 +50,8 @@ struct mppt_controller {
     float step_scale;
 
     // Previous PWM Value
-    uint8_t PWM_state;
+    uint8_t PWM_curr;
+    uint8_t PWM_prev;
 
     // Invert PWM Output
     bool invert_pwm;
