@@ -55,8 +55,8 @@ void pid_update(uint8_t sample, void *pid) {
     // Result and clamp
     float result = product + integral + derivative;
 
-    if (result > LIM_PID_OUT_MAX) {
-        result = LIM_PID_OUT_MAX;
+    if (result > p->pwm_max) {
+        result = p->pwm_max;
     } else if (result < LIM_PID_OUT_MIN) {
         result = LIM_PID_OUT_MIN;
     }

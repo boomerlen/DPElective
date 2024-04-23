@@ -39,29 +39,29 @@ static struct mppt_wrapper controller_mppt_wrapper = {
 };
 
 // The sequential handlers
-void (*handlers[3])(uint8_t, void *) = {
+void (*handlers[2])(uint8_t, void *) = {
   pid_update, // 5V
   pid_update, // 10V
-  dummy_update, // Pad
+  // dummy_update, // Pad
   //mppt_wrapper,
   //mppt_wrapper
 };
 
-void *handler_args[3] = {
+void *handler_args[2] = {
   (void *)&controller_5v,
   (void *)&controller_10v,
-  (void *)&controller_mppt_wrapper,
+  // (void *)&controller_mppt_wrapper,
 };
 
 // ADC ports
-uint8_t handler_ports[3] = {
+uint8_t handler_ports[2] = {
   MUX_FB_5V, 
   MUX_FB_10V,
-  MUX_MPPT_VOLTAGE,
+  // MUX_MPPT_VOLTAGE,
 };
 
 static struct handlers global_handler = {
-  .n_handlers = 3,
+  .n_handlers = 2,
   .handler_in_ports = handler_ports,
   .handlers = handlers,
   .handler_args = handler_args,
@@ -69,23 +69,25 @@ static struct handlers global_handler = {
 
 // Only other required global
 void mode_enable_mppt() {
-  global_handler.n_handlers = 3;
+  // global_handler.n_handlers = 2;
   handlers[1] = mppt_wrapper;
   handler_args[1] = (void *)&controller_mppt_wrapper;
-  handler_ports[1] = MUX_MPPT_CURRENT;
+  controller_5v.pwm_max = 0.9;
+  // handler_ports[1] = MUX_MPPT_CURRENT;
 
-  handlers[2] = mppt_wrapper;
+  // handlers[2] = mppt_wrapper;
 
   digitalWrite(PIN_MPPT_STATUS, HIGH);
 }
 
 void mode_disable_mppt() {
-  global_handler.n_handlers = 2;
+  // global_handler.n_handlers = 2;
   handlers[1] = pid_update;
   handler_args[1] = (void *)&controller_10v;
-  handler_ports[1] = MUX_FB_10V;
+  controller_5v.pwm_max = LIM_PID_OUT_MAX;
+  // handler_ports[1] = MUX_FB_10V;
 
-  handlers[2] = dummy_update;
+  // handlers[2] = dummy_update;
 
   digitalWrite(PIN_MPPT_STATUS, LOW);
 }
@@ -111,6 +113,9 @@ void setup() {
   controller_5v.Kd = PID_5_KD;
   controller_5v.Kp = PID_5_KP;
   controller_5v.Ki = PID_5_KI;
+
+  controller_5v.pwm_max = LIM_PID_OUT_MAX;
+  controller_10v.pwm_max = LIM_PID_OUT_MAX;
 
   // 5V uses a gate driver
   controller_5v.invert_pwm = true;

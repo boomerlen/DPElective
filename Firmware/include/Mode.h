@@ -7,12 +7,12 @@
 // #define DEBUG_PWM
 
 // Controller gains!!
-#define PID_5_KP 0.8
-#define PID_5_KI 0.8
+#define PID_5_KP 0.9
+#define PID_5_KI 2.5
 #define PID_5_KD 0.01
 
-#define PID_10_KP 0.8
-#define PID_10_KI 0.8
+#define PID_10_KP 0.9
+#define PID_10_KI 2.5
 #define PID_10_KD 0.01
 
 // Experimentally calibrated (or educatedly guessed) integrator anti-windup
@@ -22,7 +22,7 @@
 
 // PID output saturation duty cycle
 #define LIM_PID_OUT_MIN 0.1
-#define LIM_PID_OUT_MAX 0.9
+#define LIM_PID_OUT_MAX 0.65
 
 // Max voltage at any point in converter
 // Note that this will be different for the different

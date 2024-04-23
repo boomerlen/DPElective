@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include <stdbool.h>
 
-#define MPPT_COUNTER_TOP 1024
+#define MPPT_COUNTER_TOP 120
 static uint32_t mppt_counter;
 static bool mppt_flag_on;
 
@@ -17,24 +17,11 @@ void mppt_wrapper(uint8_t sample, void *mppt_wrapper) {
         return;
     }
     // Cast as correct datatype
-
-    // Always measurement current then voltage
-    if (!mppt->current_set) {
-        mppt->current = sample;
-        mppt->current_set = true;
-        return;
-    } 
-
-    mppt_counter++;
-
-    // Second measurement is always voltage - we are good to go
-    mppt_update(mppt->current, sample, mppt->controller);
-
-    // Clear data structure so we reuse the results
-    mppt->current_set = false;
+    mppt_update(sample, mppt->controller);
+    mppt_counter = 0;
 }
 
-void mppt_update(uint8_t sample_current, uint8_t sample_voltage, struct mppt_controller *mppt) {
+void mppt_update(uint8_t sample_voltage, struct mppt_controller *mppt) {
     // Extra debugging from hugo soz Riley
     if (mppt_flag_on) {
         mppt_flag_on = false;
@@ -59,7 +46,11 @@ void mppt_update(uint8_t sample_current, uint8_t sample_voltage, struct mppt_con
     if (step > 15) {
         step = 15;
     } else if (step < 1) {
-        step = 0.5;
+        step = 1;
+    }
+
+    if (mppt->PWM_curr == 10 && mppt->PWM_prev == 10) {
+        step  = 5;
     }
 
     // Calculating updated PWM
@@ -73,17 +64,17 @@ void mppt_update(uint8_t sample_current, uint8_t sample_voltage, struct mppt_con
     // Debugging Output Statements
     Serial.println("New Sample");
     Serial.println("Current: ");
-    Serial.println(mppt->curr);
-    Serial.println("Voltage");
-    Serial.println(mppt->volt);
-    Serial.println("Step Size");
-    Serial.println(step);
-    Serial.println("Output PWM");
-    Serial.println(mppt->PWM_curr);
+    Serial.println(delta_v/delta_D);
+    //Serial.println("Voltage");
+    //Serial.println(delta_v);
+    //Serial.println("Step Size");
+    //Serial.println(delta_D);
+    //Serial.println("Output PWM");
+    //Serial.println(mppt->PWM_curr);
     
     // Checking that PWM doesn't exceed maximum or minimum PWM
-    if (mppt->PWM_curr > 254) {
-        mppt->PWM_curr = 254;
+    if (mppt->PWM_curr > 140) {
+        mppt->PWM_curr = 140;
     } else if (mppt->PWM_curr < 1) {
         mppt->PWM_curr = 1;
     }
@@ -114,5 +105,5 @@ void mppt_setup(struct mppt_controller *mppt, uint8_t pin_out) {
     mppt->invert_pwm = false;
 
     // Setting step size for MPPT
-    mppt->step_scale = 10;
+    mppt->step_scale = 1;
 }
