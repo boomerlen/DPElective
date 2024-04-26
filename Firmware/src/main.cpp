@@ -18,6 +18,7 @@
 
 
 // Constant system parameters
+static bool mppt_on;
 
 // Globals
 
@@ -38,29 +39,29 @@ static struct mppt_wrapper controller_mppt_wrapper = {
 };
 
 // The sequential handlers
-void (*handlers[3])(uint8_t, void *) = {
+void (*handlers[2])(uint8_t, void *) = {
   pid_update, // 5V
   pid_update, // 10V
-  dummy_update, // Pad
+  // dummy_update, // Pad
   //mppt_wrapper,
   //mppt_wrapper
 };
 
-void *handler_args[3] = {
+void *handler_args[2] = {
   (void *)&controller_5v,
   (void *)&controller_10v,
-  (void *)&controller_mppt_wrapper,
+  // (void *)&controller_mppt_wrapper,
 };
 
 // ADC ports
-uint8_t handler_ports[3] = {
+uint8_t handler_ports[2] = {
   MUX_FB_5V, 
   MUX_FB_10V,
-  MUX_MPPT_VOLTAGE,
+  // MUX_MPPT_VOLTAGE,
 };
 
 static struct handlers global_handler = {
-  .n_handlers = 3,
+  .n_handlers = 2,
   .handler_in_ports = handler_ports,
   .handlers = handlers,
   .handler_args = handler_args,
@@ -68,21 +69,27 @@ static struct handlers global_handler = {
 
 // Only other required global
 void mode_enable_mppt() {
-  global_handler.n_handlers = 3;
+  // global_handler.n_handlers = 2;
   handlers[1] = mppt_wrapper;
   handler_args[1] = (void *)&controller_mppt_wrapper;
-  handler_ports[1] = MUX_MPPT_CURRENT;
+  controller_5v.pwm_max = 0.9;
+  // handler_ports[1] = MUX_MPPT_CURRENT;
 
-  handlers[2] = mppt_wrapper;
+  // handlers[2] = mppt_wrapper;
+
+  digitalWrite(PIN_MPPT_STATUS, HIGH);
 }
 
 void mode_disable_mppt() {
-  global_handler.n_handlers = 2;
+  // global_handler.n_handlers = 2;
   handlers[1] = pid_update;
   handler_args[1] = (void *)&controller_10v;
-  handler_ports[1] = MUX_FB_10V;
+  controller_5v.pwm_max = LIM_PID_OUT_MAX;
+  // handler_ports[1] = MUX_FB_10V;
 
-  handlers[2] = dummy_update;
+  // handlers[2] = dummy_update;
+
+  digitalWrite(PIN_MPPT_STATUS, LOW);
 }
 
 // Implement little switchy thing
@@ -90,21 +97,32 @@ void mode_disable_mppt() {
 #if defined PRODUCTION || defined DEBUG_PWM
 void setup() {
   // Set up global structs here
+  pinMode(PIN_MPPT_ON, INPUT);
+  pinMode(PIN_MPPT_STATUS, OUTPUT);
+  mppt_on = false;
+
   init_error(PIN_ERROR);
 
   Serial.begin(115200);
 
 // These are backwards
-  pid_setup(&controller_10v, PIN_PID_OUT_5V, 2.2);
-  pid_setup(&controller_5v, PIN_PID_OUT_10V, 2.4);
+  pid_setup(&controller_10v, PIN_PID_OUT_10V, 2.5);
+  pid_setup(&controller_5v, PIN_PID_OUT_5V, 2.5);
 
   // 5V setup
   controller_5v.Kd = PID_5_KD;
   controller_5v.Kp = PID_5_KP;
   controller_5v.Ki = PID_5_KI;
 
+  controller_5v.pwm_max = LIM_PID_OUT_MAX;
+  controller_10v.pwm_max = LIM_PID_OUT_MAX;
+
   // 5V uses a gate driver
   controller_5v.invert_pwm = true;
+
+  // 10V also uses a gate driver but only on one MOSFET
+  controller_10v.invert_pwm = false;
+  controller_10v.write_pin_inverted = PIN_PID_OUT_10V_INVERTED;
 
   // 10V setup
   controller_10v.Kd = PID_10_KD;
@@ -127,6 +145,25 @@ void loop() {
     // Turn off machine 
     // Cry
     // Set everything to 1
+    pwm_write(PIN_PID_OUT_10V, 0); // Unsure abt true or false
+    pwm_write(PIN_PID_OUT_5V, 0);
+    while (1) {
+      Serial.println("Fault encountered! Terminated program");
+      delay(10000);
+    }
+  }
+
+  // Probe for changes on switch pin
+  if (digitalRead(PIN_MPPT_ON)) {
+    if (!mppt_on) {
+      mppt_on = true;
+      mode_enable_mppt();
+    }
+  } else {
+    if (mppt_on) {
+      mppt_on = false;
+      mode_disable_mppt();
+    }
   }
 }
 

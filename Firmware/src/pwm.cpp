@@ -10,7 +10,7 @@ void pwm_set_speed() {
     TCCR0B |= 1 << CS01;
 
     TCCR1B &= !0x07;
-    TCCR1B |= 1 << CS01;
+    TCCR1B |= 1 << CS01; // This one is buck
 
     TCCR2B &= !0x07;
     TCCR2B |= 1 << CS01;
@@ -21,11 +21,8 @@ void pwm_set_speed() {
     TCCR4B &= !0x07;
     TCCR4B |= 1 << CS01;
 
-    TCCR4B &= !0x07;
-    TCCR4B |= 1 << CS01;
-
-    TCCR4B &= !0x07;
-    TCCR4B |= 1 << CS01;
+    TCCR5B &= !0x07;
+    TCCR5B |= 1 << CS01;
 }
 
 void pwm_write(uint8_t pin, uint8_t pwm, bool inverting) {

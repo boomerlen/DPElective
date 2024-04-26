@@ -15,6 +15,7 @@
 // Hugo fill in one day probably
 struct pid_controller {
     uint8_t write_pin;
+    uint8_t write_pin_inverted;
     
     float reference;
 
@@ -31,6 +32,8 @@ struct pid_controller {
 
     // Invert PWM output - true if we needed a gate driver
     bool invert_pwm;
+
+    float pwm_max;
 };
 
 // Riley fill in
@@ -49,7 +52,8 @@ struct mppt_controller {
     float step_scale;
 
     // Previous PWM Value
-    uint8_t PWM_state;
+    uint8_t PWM_curr;
+    uint8_t PWM_prev;
 
     // Invert PWM Output
     bool invert_pwm;
@@ -68,7 +72,7 @@ void pid_update(uint8_t sample, void *pid);
 void pid_setup(struct pid_controller *pid, uint8_t pin_out, float reference);
 
 // For Riley to fill in
-void mppt_update(uint8_t sample_current, uint8_t sample_voltage, struct mppt_controller *mppt);
+void mppt_update(uint8_t sample_voltage, struct mppt_controller *mppt);
 void mppt_setup(struct mppt_controller *mppt, uint8_t pin_out);
 
 // To not break the handler calling system 

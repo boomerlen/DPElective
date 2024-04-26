@@ -4,86 +4,90 @@
 #include <Arduino.h>
 #include <stdbool.h>
 
+#define MPPT_COUNTER_TOP 120
+static uint32_t mppt_counter;
+static bool mppt_flag_on;
+
 void mppt_wrapper(uint8_t sample, void *mppt_wrapper) {
-    // Cast as correct datatype
+    // Need to slow MPPT down quite dramatically - do this with just a counter
     struct mppt_wrapper *mppt = (struct mppt_wrapper *)mppt_wrapper;
 
-    // Always measurement current then voltage
-    if (!mppt->current_set) {
-        mppt->current = sample;
-        mppt->current_set = true;
+    if (mppt_counter != MPPT_COUNTER_TOP) {
+        mppt_counter++;
         return;
-    } 
-
-    // Second measurement is always voltage - we are good to go
-    mppt_update(mppt->current, sample, mppt->controller);
-
-    // Clear data structure so we reuse the results
-    mppt->current_set = false;
+    }
+    // Cast as correct datatype
+    mppt_update(sample, mppt->controller);
+    mppt_counter = 0;
 }
 
-void mppt_update(uint8_t sample_current, uint8_t sample_voltage, struct mppt_controller *mppt) {
+void mppt_update(uint8_t sample_voltage, struct mppt_controller *mppt) {
+    // Extra debugging from hugo soz Riley
+    if (mppt_flag_on) {
+        mppt_flag_on = false;
+        digitalWrite(PIN_MPPT_FLAG, LOW);
+    } else {
+        mppt_flag_on = true;
+        digitalWrite(PIN_MPPT_FLAG, HIGH);
+    }
+
     // Updating MPPT struct
-    mppt->prev_curr = mppt->curr;
     mppt->prev_volt = mppt->volt;
-    mppt->curr = sample_current;
     mppt->volt = sample_voltage;
 
     // Calculating deltas
-    float delta_i = mppt->curr - mppt->prev_curr;
     float delta_v = mppt->volt - mppt->prev_volt;
-    float delta_p = mppt->volt * mppt->curr - mppt->prev_volt * mppt->prev_curr;
+    float delta_D = mppt->PWM_curr - mppt->PWM_prev;
 
     // Calculating step size
-    uint8_t step = mppt->step_scale * abs(delta_p/delta_v);
+    uint8_t step = mppt->step_scale * abs(delta_v/delta_D);
 
     // Saturating step value
     if (step > 15) {
         step = 15;
     } else if (step < 1) {
-        step = 0;
+        step = 1;
     }
 
-    // Calculating new PWM value
-    if (delta_v == 0) {
-        if (delta_i != 0) {
-            if (delta_i > 0) {
-                mppt->PWM_state = mppt->PWM_state + step;
-            } else {
-                mppt->PWM_state = mppt->PWM_state + step;
-            }
-        }
-    } else if (delta_i/delta_v != 0) {
-        if (delta_i/delta_v > -mppt->curr/mppt->volt) {
-            mppt->PWM_state = mppt->PWM_state - step;
-        } else {
-            mppt->PWM_state = mppt->PWM_state + step;
-        }
+    if (mppt->PWM_curr == 10 && mppt->PWM_prev == 10) {
+        step  = 5;
+    }
+
+    // Calculating updated PWM
+    mppt->PWM_prev = mppt->PWM_curr;
+    if (delta_v/delta_D > 0) {
+        mppt->PWM_curr = mppt->PWM_curr + step;
+    } else {
+        mppt->PWM_curr = mppt->PWM_curr - step;
     }
 
     // Debugging Output Statements
     Serial.println("New Sample");
     Serial.println("Current: ");
-    Serial.println(mppt->curr);
-    Serial.println("Voltage");
-    Serial.println(mppt->volt);
-    Serial.println("Step Size");
-    Serial.println(step);
-    Serial.println("Output PWM");
-    Serial.println(mppt->PWM_state);
+    Serial.println(delta_v/delta_D);
+    //Serial.println("Voltage");
+    //Serial.println(delta_v);
+    //Serial.println("Step Size");
+    //Serial.println(delta_D);
+    //Serial.println("Output PWM");
+    //Serial.println(mppt->PWM_curr);
     
     // Checking that PWM doesn't exceed maximum or minimum PWM
-    if (mppt->PWM_state > 254) {
-        mppt->PWM_state = 254;
-    } else if (mppt->PWM_state < 1) {
-        mppt->PWM_state = 1;
+    if (mppt->PWM_curr > 140) {
+        mppt->PWM_curr = 140;
+    } else if (mppt->PWM_curr < 1) {
+        mppt->PWM_curr = 1;
     }
 
     // Writing to PWM pin
-    pwm_write(mppt->write_pin, mppt->PWM_state, mppt->invert_pwm);
+    pwm_write(mppt->write_pin, mppt->PWM_curr, mppt->invert_pwm);
 }
 
 void mppt_setup(struct mppt_controller *mppt, uint8_t pin_out) {
+    // Sorry Riley just some extra garbage here
+    mppt_counter = 0;
+    mppt_flag_on = false;
+
     // Set initial values for current and voltage to 0
     mppt->curr = 0;
     mppt->prev_curr = 0;
@@ -94,7 +98,8 @@ void mppt_setup(struct mppt_controller *mppt, uint8_t pin_out) {
     mppt->write_pin = pin_out;
 
     // Initialising PWM pin
-    mppt->PWM_state = 10;
+    mppt->PWM_curr = 10;
+    mppt->PWM_prev = 10;
 
     // Setting invert pwm
     mppt->invert_pwm = false;
